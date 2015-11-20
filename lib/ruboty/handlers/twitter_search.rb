@@ -14,12 +14,17 @@ module Ruboty
       env :TWITTER_CONSUMER_KEY, "Twitter consumer key (a.k.a. API key)"
       env :TWITTER_CONSUMER_SECRET, "Twitter consumer secret (a.k.a. API secret)"
       env :TWITTER_DISABLE_SINCE_ID, "Pass 1 to disable using since_id parameter", optional: true
-      env :TWITTER_IGNORE_USERS, "Ignore users", optional: true
 
       on(
         /search twitter by (?<query>.+)/,
         description: "Search twitter by given query",
         name: :search,
+      )
+
+      on(
+        /ignore twitter user (?<screen_name>.+)\z/,
+        name: "ignore",
+        description: "Ignore twitter user",
       )
 
       # @return [true] to prevent running missing handlers.
@@ -42,7 +47,6 @@ module Ruboty
           status.favorite_count >= query.minimum_favorite_count
         end
 
-        ignore_users = (ENV['TWITTER_IGNORE_USERS'] || '').split(/\s/)
         statuses.reject! do |status|
           ignore_users.include?(status.user.screen_name)
         end
@@ -55,6 +59,11 @@ module Ruboty
         message.reply("#{exception.class}: #{exception}")
       ensure
         return true
+      end
+
+      def ignore(message)
+        ignore_users << message[:screen_name]
+        message.reply("Ignored twitter user: #{message[:screen_name]}")
       end
 
       private
@@ -89,6 +98,14 @@ module Ruboty
         unless disabled_to_use_since_id?
           store[query] = since_id
         end
+      end
+
+      def store_ignore_users
+        store[:ignore_users] ||= []
+      end
+
+      def ignore_users
+        @ignore_users ||= store_ignore_users
       end
     end
   end
