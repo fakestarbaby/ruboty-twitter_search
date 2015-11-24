@@ -68,8 +68,12 @@ module Ruboty
       end
 
       def ignore(message)
-        ignore_users << message[:screen_name]
-        message.reply("Ignored twitter user: #{message[:screen_name]}")
+        if already_exists_user?(message[:screen_name])
+          message.reply("Already ignored twitter user: #{message[:screen_name]}")
+        else
+          ignore_users << message[:screen_name]
+          message.reply("Ignored twitter user: #{message[:screen_name]}")
+        end
       end
 
       def list(message)
@@ -116,6 +120,10 @@ module Ruboty
 
       def ignore_users
         @ignore_users ||= store_ignore_users
+      end
+
+      def already_exists_user?(screen_name)
+        ignore_users.include?(screen_name)
       end
     end
   end
