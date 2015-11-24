@@ -27,6 +27,12 @@ module Ruboty
         description: "Ignore twitter user",
       )
 
+      on(
+        /list ignore twitter users\z/,
+        name: "list",
+        description: "List all ignore twitter users",
+      )
+
       # @return [true] to prevent running missing handlers.
       def search(message)
         query = Ruboty::TwitterSearch::Query.new(message[:query])
@@ -64,6 +70,10 @@ module Ruboty
       def ignore(message)
         ignore_users << message[:screen_name]
         message.reply("Ignored twitter user: #{message[:screen_name]}")
+      end
+
+      def list(message)
+        message.reply(ignore_users, code: true)
       end
 
       private
