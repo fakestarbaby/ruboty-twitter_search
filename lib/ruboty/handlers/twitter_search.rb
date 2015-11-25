@@ -21,6 +21,18 @@ module Ruboty
         name: :search,
       )
 
+      on(
+        /ignore twitter user (?<screen_name>.+)\z/,
+        name: "ignore",
+        description: "Ignore twitter user",
+      )
+
+      on(
+        /list ignore twitter users\z/,
+        name: "list",
+        description: "List all ignore twitter users",
+      )
+
       # @return [true] to prevent running missing handlers.
       def search(message)
         query = Ruboty::TwitterSearch::Query.new(message[:query])
@@ -41,6 +53,10 @@ module Ruboty
           status.favorite_count >= query.minimum_favorite_count
         end
 
+        statuses.reject! do |status|
+          ignore_users.include?(status.user.screen_name)
+        end
+
         if statuses.any?
           message.reply(Ruboty::TwitterSearch::StatusesView.new(statuses).to_s)
           store_since_id(query: message[:query], since_id: since_id)
@@ -49,6 +65,19 @@ module Ruboty
         message.reply("#{exception.class}: #{exception}")
       ensure
         return true
+      end
+
+      def ignore(message)
+        if already_exists_user?(message[:screen_name])
+          message.reply("Already ignored twitter user: #{message[:screen_name]}")
+        else
+          ignore_users << message[:screen_name]
+          message.reply("Ignored twitter user: #{message[:screen_name]}")
+        end
+      end
+
+      def list(message)
+        message.reply(ignore_users, code: true)
       end
 
       private
@@ -83,6 +112,18 @@ module Ruboty
         unless disabled_to_use_since_id?
           store[query] = since_id
         end
+      end
+
+      def store_ignore_users
+        store[:ignore_users] ||= []
+      end
+
+      def ignore_users
+        @ignore_users ||= store_ignore_users
+      end
+
+      def already_exists_user?(screen_name)
+        ignore_users.include?(screen_name)
       end
     end
   end
